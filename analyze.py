@@ -11,14 +11,22 @@ def make_label(filename):
     and get the number from the file name."""
     filename = filename.split('/')[-1]
     filename = filename.split('_')[0]
+    # sometimes unexpected '%'
+    filename = filename.split('%')[0]
     return filename
+
+
+def parse_time(series):
+    """Convert to Datetime to get timedelta"""
+    # ignore 24:00:00 (cannot parse with strptime)
+    series = series.apply(lambda x: x.split(' ')[0])
+    series = pd.to_datetime(series, format='%m/%d/%Y')
+    return series
 
 
 def create_timedelta(df):
     df_ = df[:]
-    # Convert to Datetime to get timedelta
-    df_['Time (UTC)'] = pd.to_datetime(
-        df['Time (UTC)'], format='%m/%d/%Y %H:%M:%S')
+    df_['Time (UTC)'] = parse_time(df_['Time (UTC)'])
     df_diff = pd.DataFrame.from_dict({"diff": df_["Time (UTC)"][i]-df_[
                                      "Time (UTC)"][0], df_.columns.values[1]: df_.iat[i, 1]} for i in range(len(df_)))
     print(df_diff)
@@ -27,7 +35,7 @@ def create_timedelta(df):
 
 def load_data():
     csvs = [csv for csv in glob.glob('./data/*.csv')]
-    csvs = sorted(csvs)
+    csvs = sorted(csvs, key=lambda x: int(make_label(x)))
     df = pd.read_csv(f"{csvs[0]}")
 
     df = df.rename(columns={"Time (UTC)": "Time (UTC)",
@@ -40,9 +48,7 @@ def load_data():
             columns={"Time (UTC)": "Time (UTC)", "Plays": f"{make_label(csv)}"})
         df_diff = pd.merge(df_diff, create_timedelta(df_))
         df = pd.merge(df, df_, on='Time (UTC)', how='outer')
-
-    df['Time (UTC)'] = pd.to_datetime(
-        df['Time (UTC)'], format='%m/%d/%Y %H:%M:%S')
+    df['Time (UTC)'] = parse_time(df['Time (UTC)'])
     df = df.fillna(0)
     df = df.sort_values('Time (UTC)')
     print(df)
