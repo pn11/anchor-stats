@@ -19,7 +19,7 @@ chromeOptions = webdriver.ChromeOptions()
 prefs = {"download.default_directory": os.path.dirname(__file__) + '/data'}
 chromeOptions.add_experimental_option("prefs", prefs)
 
-driver = webdriver.Chrome(chrome_options=chromeOptions)
+driver = webdriver.Chrome(options=chromeOptions)
 
 driver.get('https://anchor.fm/dashboard/episodes')
 
