@@ -35,7 +35,7 @@ def create_timedelta(df):
 
 def load_data():
     csvs = [csv for csv in glob.glob('./data/*.csv')]
-    csvs = sorted(csvs, key=lambda x: int(make_label(x)))
+    csvs = sorted(csvs, key=lambda x: make_label(x))
     df = pd.read_csv(f"{csvs[0]}")
 
     df = df.rename(columns={"Time (UTC)": "Time (UTC)",
@@ -79,6 +79,14 @@ def plot_data(df, df_diff):
         ax4.plot(x_diff, np.cumsum(y_diff.iloc[:, i]), label=col)
 
     ax1.legend()
+
+    total = df.sum(axis=1)
+    #print(total)
+    fig2 = plt.figure(figsize=(15, 8))
+    ax5 = fig2.add_subplot(121)
+    ax5.plot(total.index, total)
+    ax6 = fig2.add_subplot(122)
+    ax6.plot(total.index, np.cumsum(total))
 
     plt.show()
 
