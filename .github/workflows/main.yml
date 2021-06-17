@@ -1,0 +1,40 @@
+name: Python application
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install selenium
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install Google Chrome
+      run: |
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb
+        sudo apt update
+        sudo apt -f install -y
+    - name: Install Chrome driver
+      run: |
+        wget https://chromedriver.storage.googleapis.com/91.0.4472.101/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+    - name: Run selenium
+      run: |
+        python run.py
+      env:
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        ANCHHOR_EMAIL: ${{ ANCHHOR_EMAIL }}
+        ANCHOR_PASSWORD: ${{ ANCHOR_PASSWORD }}
