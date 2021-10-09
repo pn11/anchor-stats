@@ -84,7 +84,7 @@ def plot_data(df, df_diff):
     ax1.legend()
 
     total = df.sum(axis=1)
-    
+
     # Total
     fig2 = plt.figure(figsize=(15, 8))
     ax5 = fig2.add_subplot(121)
@@ -94,7 +94,7 @@ def plot_data(df, df_diff):
     ax6 = fig2.add_subplot(122)
     ax6.plot(df['Time (UTC)'], np.cumsum(total))
     ax6.set_title('Total Plays (cumulative)')
-    #ax6.set_yscale('log')
+    # ax6.set_yscale('log')
 
     plt.show()
 

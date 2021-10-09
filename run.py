@@ -28,10 +28,12 @@ driver.get('https://anchor.fm/dashboard/episodes')
 
 NUM_TRIAL = 5
 
+
 class Status(Enum):
     OK = 0
     FAILED = 1
     FINISHED = 2
+
 
 def login():
     username = driver.find_element_by_name('email')
@@ -45,7 +47,7 @@ def login():
     button.click()
 
 
-def find_button(xpath: str, num_trial: int)->Status:
+def find_button(xpath: str, num_trial: int) -> Status:
     """find button by xpath and click. return False if failed."""
     for t in range(num_trial):
         try:
@@ -62,7 +64,8 @@ def find_button(xpath: str, num_trial: int)->Status:
 def get_num_episodes(num_trial, sleep_time):
     for t in range(num_trial):
         try:
-            num = len(driver.find_elements_by_xpath('//*[@id="app-content"]/div/div/div/div[2]/ul/li'))
+            num = len(driver.find_elements_by_xpath(
+                '//*[@id="app-content"]/div/div/div/div[2]/ul/li'))
             if num == 0:
                 raise Exception
             return num
@@ -72,7 +75,7 @@ def get_num_episodes(num_trial, sleep_time):
     return None
 
 
-def get_episode_page(i: int) ->Status:
+def get_episode_page(i: int) -> Status:
     driver.get('https://anchor.fm/dashboard/episodes')
     time.sleep(10)
     page_num = (i-1) // 15
@@ -80,29 +83,30 @@ def get_episode_page(i: int) ->Status:
 
     for _ in range(page_num):
         # find the button to the next page.
-        isOK = find_button(xpath='//*[@id="app-content"]/div/div/div/div[3]/div/button[3]', num_trial=NUM_TRIAL)
+        isOK = find_button(
+            xpath='//*[@id="app-content"]/div/div/div/div[3]/div/button[3]', num_trial=NUM_TRIAL)
         if isOK:
             time.sleep(10)
         else:
             # if the button to the next page not found, then finish.
             return Status.FINISHED
-    
+
     num_episodes_per_page = get_num_episodes(num_trial=NUM_TRIAL, sleep_time=5)
     if num_episodes_per_page is None or num_episodes_per_page == 0:
         return Status.FAILED
-    
-    print(f"Processing {ind}/{num_episodes_per_page} episodes in page {page_num+1}.")
+
+    print(
+        f"Processing {ind}/{num_episodes_per_page} episodes in page {page_num+1}.")
     if ind >= num_episodes_per_page and num_episodes_per_page != 15:
         return Status.FINISHED
-    
+
     return find_button(xpath=f'//*[@id="app-content"]/div/div/div/div[2]/ul/li[{ind}]/button',  num_trial=NUM_TRIAL)
-
-
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Anchor stats')
-    parser.add_argument('--json', help='Specify episode.json to skip scraping to make the episode list.', required=False)
+    parser.add_argument(
+        '--json', help='Specify episode.json to skip scraping to make the episode list.', required=False)
     args = parser.parse_args()
 
     login()
@@ -128,8 +132,10 @@ if __name__ == '__main__':
                 continue
             elif status == Status.FINISHED:
                 break
-        json.dump(episodes, open('out.json', 'w'), ensure_ascii=False, indent=2)
+        json.dump(episodes, open('episodes.json', 'w'),
+                  ensure_ascii=False, indent=2)
 
     for episode in episodes:
         time.sleep(1)
-        driver.get(f"https://anchor.fm/api/proxy/v3/analytics/episode/webEpisodeId:{episode['id']}/plays?&timeInterval=86400&limit=3&csvFilename={episode['title']}.csv")
+        driver.get(
+            f"https://anchor.fm/api/proxy/v3/analytics/episode/webEpisodeId:{episode['id']}/plays?&timeInterval=86400&limit=3&csvFilename={episode['title']}.csv")
