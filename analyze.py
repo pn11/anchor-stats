@@ -7,12 +7,11 @@ import pandas as pd
 
 
 def make_label(filename):
-    """Assume CSV file name to be EPISODENUMBER_EPISODETITLE eg.) 1_TheFirstEpisode.csv
-    and get the number from the file name."""
     filename = filename.split('/')[-1]
     filename = filename.split('_')[0]
     # sometimes unexpected '%'
     filename = filename.split('%')[0]
+    filename = filename[:10]
     return filename
 
 
@@ -69,9 +68,13 @@ def plot_data(df, df_diff):
 
     fig = plt.figure(figsize=(15, 8))
     ax1 = fig.add_subplot(221)
+    ax1.set_title('Plays / day')
     ax2 = fig.add_subplot(223)
+    ax2.set_title('Plays (cumulative)')
     ax3 = fig.add_subplot(222)
+    ax3.set_title('Plays / day (in first few days)')
     ax4 = fig.add_subplot(224)
+    ax3.set_title('Plays / day (cumulative, in first few days)')
     for i, col in enumerate(y.columns.to_list()):
         ax1.plot(x, y.iloc[:, i], label=col)
         ax2.plot(x, np.cumsum(y.iloc[:, i]), label=col)
@@ -81,12 +84,17 @@ def plot_data(df, df_diff):
     ax1.legend()
 
     total = df.sum(axis=1)
-    #print(total)
+    
+    # Total
     fig2 = plt.figure(figsize=(15, 8))
     ax5 = fig2.add_subplot(121)
-    ax5.plot(total.index, total)
+    ax5.plot(df['Time (UTC)'], total)
+    ax5.set_title('Total Plays / day')
+
     ax6 = fig2.add_subplot(122)
-    ax6.plot(total.index, np.cumsum(total))
+    ax6.plot(df['Time (UTC)'], np.cumsum(total))
+    ax6.set_title('Total Plays (cumulative)')
+    #ax6.set_yscale('log')
 
     plt.show()
 
