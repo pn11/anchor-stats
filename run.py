@@ -1,7 +1,9 @@
+import argparse
 import json
 from enum import Enum
 import time
 import os
+import re
 
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -96,37 +98,38 @@ def get_episode_page(i: int) ->Status:
     return find_button(xpath=f'//*[@id="app-content"]/div/div/div/div[2]/ul/li[{ind}]/button',  num_trial=NUM_TRIAL)
 
 
-def download_stats():
-    time.sleep(10)
-    driver.find_element_by_xpath(
-        '//*[@id="app-content"]/div/div/div/div[2]/div/div[2]/div/div/div/div/div/div').click()
-    time.sleep(0.5)
-    driver.find_element_by_xpath(
-        '//*[@id="app-content"]/div/div/div/div[2]/div/div[2]/div/div/div/div[2]/div/div[1]/div[6]/div').click()
-    time.sleep(0.5)
-    driver.find_element_by_xpath(
-        '//*[@id="app-content"]/div/div/div/div[3]/div[1]/div/div/div/div/div/div').click()
-    time.sleep(0.5)
-    driver.find_element_by_xpath(
-        '//*[@id="app-content"]/div/div/div/div[3]/div[1]/div/div/div/div[2]/div/div/div[1]/div/div').click()
-    time.sleep(0.5)
-    driver.find_element_by_xpath(
-        '//*[@id="app-content"]/div/div/div/div[3]/div[3]/div/div/div/a').click()
-    print('Downloading', driver.find_element_by_xpath('/html/body/div/div/div/div/div/div/div[1]/div[2]/div[2]/div[1]/div[1]/div/h1').text)
-    time.sleep(5)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Anchor stats')
+    parser.add_argument('--json', help='Specify episode.json to skip scraping to make the episode list.', required=False)
+    args = parser.parse_args()
+
     login()
     time.sleep(1)
-    i = 1
-    while True:
-        print(f"Processing {i}th episode.")
-        status = get_episode_page(i)
-        i += 1
-        if status == Status.OK:
-            download_stats()
-        elif status == Status.FAILED:
-            continue
-        elif status == Status.FINISHED:
-            break
+    if args.json:
+        episodes = json.load(open(args.json))
+    else:
+        i = 1
+        episodes = []
+        while True:
+            print(f"Processing {i}th episode.")
+            status = get_episode_page(i)
+            i += 1
+            if status == Status.OK:
+                time.sleep(5)
+                url = driver.current_url
+                epi_id = url.split('/')[-1]
+                title = driver.find_elements_by_tag_name('h1')[1].text
+                # 英数字以外除去
+                title = re.sub(r'\W', '', title)
+                episodes.append({'id': epi_id, 'title': title})
+            elif status == Status.FAILED:
+                continue
+            elif status == Status.FINISHED:
+                break
+        json.dump(episodes, open('out.json', 'w'), ensure_ascii=False, indent=2)
+
+    for episode in episodes:
+        time.sleep(1)
+        driver.get(f"https://anchor.fm/api/proxy/v3/analytics/episode/webEpisodeId:{episode['id']}/plays?&timeInterval=86400&limit=3&csvFilename={episode['title']}.csv")
