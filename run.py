@@ -9,25 +9,7 @@ from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
 from selenium.common.exceptions import NoSuchElementException
-
-
-# EMAIL, PASSWORD は .env に書く
-load_dotenv(verbose=True)
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(dotenv_path)
-EMAIL = os.environ.get("EMAIL")
-PASSWORD = os.environ.get("PASSWORD")
-
-chromeOptions = webdriver.ChromeOptions()
-prefs = {"download.default_directory": os.path.dirname(__file__) + '/data'}
-chromeOptions.add_experimental_option("prefs", prefs)
-
-driver = webdriver.Chrome(options=chromeOptions)
-
-driver.get('https://anchor.fm/dashboard/episodes')
-
-NUM_TRIAL = 5
-
+from selenium.webdriver.common.by import By
 
 class Status(Enum):
     OK = 0
@@ -35,15 +17,15 @@ class Status(Enum):
     FINISHED = 2
 
 
-def login():
-    username = driver.find_element_by_name('email')
+def login(driver):
+    username = driver.find_element(by=By.NAME, value='email')
     username.send_keys(EMAIL)
 
-    password = driver.find_element_by_name('password')
+    password = driver.find_element(by=By.NAME, value='password')
     password.send_keys(PASSWORD)
     time.sleep(1)
 
-    button = driver.find_element_by_xpath('//*[@id="LoginForm"]/div[3]/button')
+    button = driver.find_element(by=By.XPATH, value='//*[@id="LoginForm"]/div[3]/button')
     button.click()
 
 
@@ -51,7 +33,7 @@ def find_button(xpath: str, num_trial: int) -> Status:
     """find button by xpath and click. return False if failed."""
     for t in range(num_trial):
         try:
-            button = driver.find_element_by_xpath(xpath)
+            button = driver.find_element(by=By.XPATH, value=xpath)
             button.click()
             return Status.OK
         except NoSuchElementException:
@@ -64,7 +46,7 @@ def find_button(xpath: str, num_trial: int) -> Status:
 def get_num_episodes(num_trial, sleep_time):
     for t in range(num_trial):
         try:
-            num = len(driver.find_elements_by_xpath(
+            num = len(driver.find_elements(by=By.XPATH, value=
                 '//*[@id="app-content"]/div/div/div/div[2]/ul/li'))
             if num == 0:
                 raise Exception
@@ -107,9 +89,30 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Anchor stats')
     parser.add_argument(
         '--json', help='Specify episode.json to skip scraping to make the episode list.', required=False)
+    parser.add_argument(
+        '--headless', help='Use Headless Chrome', action='store_true', required=False)
     args = parser.parse_args()
 
-    login()
+    # EMAIL, PASSWORD は .env に書く
+    load_dotenv(verbose=True)
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+    load_dotenv(dotenv_path)
+    EMAIL = os.environ.get("EMAIL")
+    PASSWORD = os.environ.get("PASSWORD")
+
+    chromeOptions = webdriver.ChromeOptions()
+    prefs = {"download.default_directory": os.path.dirname(__file__) + '/data'}
+    chromeOptions.add_experimental_option("prefs", prefs)
+    if args.headless:
+        chromeOptions.add_argument('--headless')
+
+    driver = webdriver.Chrome(executable_path='./chromedriver', options=chromeOptions)
+
+    driver.get('https://anchor.fm/dashboard/episodes')
+
+    NUM_TRIAL = 5
+
+    login(driver)
     time.sleep(1)
     if args.json:
         episodes = json.load(open(args.json))
@@ -124,7 +127,7 @@ if __name__ == '__main__':
                 time.sleep(5)
                 url = driver.current_url
                 epi_id = url.split('/')[-1]
-                title = driver.find_elements_by_tag_name('h1')[1].text
+                title = driver.find_elements(by=By.TAG_NAME, value='h1')[1].text
                 # 英数字以外除去
                 title = re.sub(r'\W', '', title)
                 episodes.append({'id': epi_id, 'title': title})
