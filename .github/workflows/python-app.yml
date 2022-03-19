@@ -1,0 +1,33 @@
+name: Python application
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install selenium
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install Google Chrome and Chrome Driver
+      run: |
+        bash install_chrome_and_driver_ubuntu.sh
+    - name: Run selenium
+      run: |
+        python run.py --headless
+      env:
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        ANCHHOR_EMAIL: ${{ ANCHHOR_EMAIL }}
+        ANCHOR_PASSWORD: ${{ ANCHOR_PASSWORD }}
