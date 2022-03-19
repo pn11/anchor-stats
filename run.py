@@ -29,7 +29,7 @@ def login(driver):
     button.click()
 
 
-def find_button(xpath: str, num_trial: int) -> Status:
+def find_button(driver, xpath: str, num_trial: int) -> Status:
     """find button by xpath and click. return False if failed."""
     for t in range(num_trial):
         try:
@@ -43,7 +43,7 @@ def find_button(xpath: str, num_trial: int) -> Status:
     return Status.FAILED
 
 
-def get_num_episodes(num_trial, sleep_time):
+def get_num_episodes(driver, num_trial, sleep_time):
     for t in range(num_trial):
         try:
             num = len(driver.find_elements(by=By.XPATH, value=
@@ -57,7 +57,7 @@ def get_num_episodes(num_trial, sleep_time):
     return None
 
 
-def get_episode_page(i: int) -> Status:
+def get_episode_page(driver, i: int) -> Status:
     driver.get('https://anchor.fm/dashboard/episodes')
     time.sleep(10)
     page_num = (i-1) // 15
@@ -65,15 +65,15 @@ def get_episode_page(i: int) -> Status:
 
     for _ in range(page_num):
         # find the button to the next page.
-        isOK = find_button(
-            xpath='//*[@id="app-content"]/div/div/div/div[3]/div/button[3]', num_trial=NUM_TRIAL)
+        isOK = find_button(driver,
+            xpath='//*[@id="app-content"]/div/div/div/div[3]/div/div/button[3]', num_trial=NUM_TRIAL)
         if isOK:
             time.sleep(10)
         else:
             # if the button to the next page not found, then finish.
             return Status.FINISHED
 
-    num_episodes_per_page = get_num_episodes(num_trial=NUM_TRIAL, sleep_time=5)
+    num_episodes_per_page = get_num_episodes(driver, num_trial=NUM_TRIAL, sleep_time=5)
     if num_episodes_per_page is None or num_episodes_per_page == 0:
         return Status.FAILED
 
@@ -82,7 +82,33 @@ def get_episode_page(i: int) -> Status:
     if ind >= num_episodes_per_page and num_episodes_per_page != 15:
         return Status.FINISHED
 
-    return find_button(xpath=f'//*[@id="app-content"]/div/div/div/div[2]/ul/li[{ind}]/button',  num_trial=NUM_TRIAL)
+    return find_button(driver, xpath=f'//*[@id="app-content"]/div/div/div/div[2]/ul/li[{ind}]/button',  num_trial=NUM_TRIAL)
+
+def fetch_episode_list(driver):
+    i = 1
+    episodes = []
+    while True:
+        print(f"Processing {i}th episode.")
+        status = get_episode_page(driver, i)
+        i += 1
+        if status == Status.OK:
+            time.sleep(5)
+            url = driver.current_url
+            epi_id = url.split('/')[-1]
+            title = driver.find_elements(by=By.TAG_NAME, value='h1')[1].text
+            # 英数字以外除去
+            title = re.sub(r'\W', '', title)
+            episodes.append({'id': epi_id, 'title': title})
+        elif status == Status.FAILED:
+            continue
+        elif status == Status.FINISHED:
+            break
+    return episodes
+
+
+def download_csv(driver, episode_id, episode_title):
+    driver.get(
+        f"https://anchor.fm/api/proxy/v3/analytics/episode/webEpisodeId:{episode_id}/plays?&timeInterval=86400&limit=3&csvFilename={episode_title}.csv")
 
 
 if __name__ == '__main__':
@@ -117,28 +143,10 @@ if __name__ == '__main__':
     if args.json:
         episodes = json.load(open(args.json))
     else:
-        i = 1
-        episodes = []
-        while True:
-            print(f"Processing {i}th episode.")
-            status = get_episode_page(i)
-            i += 1
-            if status == Status.OK:
-                time.sleep(5)
-                url = driver.current_url
-                epi_id = url.split('/')[-1]
-                title = driver.find_elements(by=By.TAG_NAME, value='h1')[1].text
-                # 英数字以外除去
-                title = re.sub(r'\W', '', title)
-                episodes.append({'id': epi_id, 'title': title})
-            elif status == Status.FAILED:
-                continue
-            elif status == Status.FINISHED:
-                break
+        episodes = fetch_episode_list(driver)
         json.dump(episodes, open('episodes.json', 'w'),
                   ensure_ascii=False, indent=2)
 
     for episode in episodes:
         time.sleep(1)
-        driver.get(
-            f"https://anchor.fm/api/proxy/v3/analytics/episode/webEpisodeId:{episode['id']}/plays?&timeInterval=86400&limit=3&csvFilename={episode['title']}.csv")
+        download_csv(driver, episode['id'], episode['title'])
