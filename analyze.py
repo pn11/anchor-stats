@@ -74,7 +74,7 @@ def plot_data(df, df_diff):
     ax3 = fig.add_subplot(222)
     ax3.set_title('Plays / day (in first few days)')
     ax4 = fig.add_subplot(224)
-    ax3.set_title('Plays / day (cumulative, in first few days)')
+    ax4.set_title('Plays / day (cumulative, in first few days)')
     for i, col in enumerate(y.columns.to_list()):
         ax1.plot(x, y.iloc[:, i], label=col)
         ax2.plot(x, np.cumsum(y.iloc[:, i]), label=col)
@@ -95,7 +95,8 @@ def plot_data(df, df_diff):
     ax6.plot(df['Time (UTC)'], np.cumsum(total))
     ax6.set_title('Total Plays (cumulative)')
     # ax6.set_yscale('log')
-
+    fig.savefig("episodes.png")
+    fig2.savefig("total.png")
     plt.show()
 
 
