@@ -83,7 +83,7 @@ def plot_data(df, df_diff):
 
     ax1.legend()
 
-    total = df.sum(axis=1)
+    total = df.sum(axis='columns')
 
     # Total
     fig2 = plt.figure(figsize=(15, 8))
@@ -100,8 +100,15 @@ def plot_data(df, df_diff):
     plt.show()
 
 
+def plays_ranking(df):
+    sr: pd.Series = df.sum(axis='index')
+    print(sr.sort_values(ascending=False))
+
+
 def main():
     df, df_diff = load_data()
+    plays_ranking(df)
+
     plot_data(df, df_diff)
 
 
