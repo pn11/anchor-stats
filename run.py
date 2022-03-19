@@ -54,13 +54,12 @@ def main():
 
 
 def login(driver):
-    # EMAIL, PASSWORD は .env に書く
-    load_dotenv(verbose=True)
+    # ANCHOR_EMAIL, ANCHOR_PASSWORD は .env に書く
     dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(dotenv_path)
 
-    email = os.environ.get("EMAIL")
-    password = os.environ.get("PASSWORD")
+    email = os.environ.get("ANCHOR_EMAIL")
+    password = os.environ.get("ANCHOR_PASSWORD")
     username_area = driver.find_element(by=By.NAME, value='email')
     username_area.send_keys(email)
 
