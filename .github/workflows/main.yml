@@ -29,5 +29,5 @@ jobs:
         python run.py --headless
       env:
         DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        ANCHHOR_EMAIL: ${{ ANCHHOR_EMAIL }}
-        ANCHOR_PASSWORD: ${{ ANCHOR_PASSWORD }}
+        ANCHHOR_EMAIL: ${{ secrets.ANCHHOR_EMAIL }}
+        ANCHOR_PASSWORD: ${{ secrets.ANCHOR_PASSWORD }}
